@@ -11,7 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Diary  extends Timestamped{
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
@@ -21,21 +21,20 @@ public class Diary  extends Timestamped{
     private String title;
 
     @Column(nullable = false)
-    private String password;
-
-    @Column(nullable = false)
     private String contents;
 
-    public Diary(DiaryRequestDto diaryRequestDto){
-        this.username = diaryRequestDto.getUsername();
-        this.password = diaryRequestDto.getPassword();
+    @ManyToOne
+    @JoinColumn(name = "USER_ID", nullable = false)
+    private User user;
+
+    public Diary(DiaryRequestDto diaryRequestDto, User user){
+        this.username = user.getUsername();
         this.title = diaryRequestDto.getTitle();
         this.contents = diaryRequestDto.getContents();
+        this.user = user;
     }
 
     public void update(DiaryRequestDto requestDto){
-        this.username = requestDto.getUsername();
-        this.password = requestDto.getPassword();
         this.title = requestDto.getTitle();
         this.contents = requestDto.getContents();
      }
