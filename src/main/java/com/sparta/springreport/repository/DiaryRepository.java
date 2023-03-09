@@ -7,10 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface DiaryRepository extends JpaRepository<Diary, Long> {
-    List<Diary> findAllByOrderByModifiedAtDesc();
-
-
-    Optional<Diary> findFirstByIdAndPassword(Long id, String  password);
-
-    void deleteByIdAndPassword(Long id, String password);
+    List<Diary> findAllByOrderByCreatedAtDesc();
+    Optional<Diary> findByIdAndUsername(Long id, String username);
 }
