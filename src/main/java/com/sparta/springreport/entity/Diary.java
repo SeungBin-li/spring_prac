@@ -6,11 +6,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Entity
 @NoArgsConstructor
 public class Diary  extends Timestamped{
     @Id
+    @Column(name = "diary_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -24,8 +28,12 @@ public class Diary  extends Timestamped{
     private String contents;
 
     @ManyToOne
-    @JoinColumn(name = "USER_ID", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL)
+    @OrderBy(value = "createdAt DESC")
+    List<Comment> commentList = new ArrayList<>();
 
     public Diary(DiaryRequestDto diaryRequestDto, User user){
         this.username = user.getUsername();

@@ -1,6 +1,14 @@
 package com.sparta.springreport.jwt;
 
+import com.sparta.springreport.common.ApiException;
+import com.sparta.springreport.common.ExceptionEnum;
+import com.sparta.springreport.entity.Comment;
+import com.sparta.springreport.entity.Diary;
+import com.sparta.springreport.entity.User;
 import com.sparta.springreport.entity.UserRoleEnum;
+import com.sparta.springreport.repository.CommentRepository;
+import com.sparta.springreport.repository.DiaryRepository;
+import com.sparta.springreport.repository.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
@@ -21,6 +29,9 @@ import java.util.Date;
 @Component
 @RequiredArgsConstructor
 public class JwtUtil {
+    private final UserRepository userRepository;
+    private final DiaryRepository diaryRepository;
+    private final CommentRepository commentRepository;
 
     public static final String AUTHORIZATION_HEADER = "Authorization";
     public static final String AUTHORIZATION_KEY = "auth";
@@ -83,4 +94,60 @@ public class JwtUtil {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
     }
 
+    public User getUserInfo(HttpServletRequest request) {
+        String token = resolveToken(request);
+        Claims claims;
+        User user = null;
+
+        if (token != null) {
+            // JWT의 유효성을 검증하여 올바른 JWT인지 확인
+            if (validateToken(token)) {
+                // 토큰에서 사용자 정보 가져오기
+                claims = getUserInfoFromToken(token);
+            } else {
+                throw new ApiException(ExceptionEnum.INVAILD_TOKEN);
+            }
+
+            // 토큰에서 가져온 사용자 정보를 사용하여 DB 조회
+            user = userRepository.findByUsername(claims.getSubject()).orElseThrow(
+                    () -> new ApiException(ExceptionEnum.NOT_FOUND_USER)
+            );
+            return user;
+        }
+        throw new ApiException(ExceptionEnum.NOT_TOKEN);
+    }
+
+    // 관리자 계정만 모든 게시글 수정, 삭제 가능
+    public Diary getDiaryAdminInfo(Long id, User user) {
+        Diary diary;
+        if (user.getRole().equals(UserRoleEnum.ADMIN)) {
+            // 관리자 계정이기 때문에 게시글 아이디만 일치하면 수정,삭제 가능
+            diary = diaryRepository.findById(id).orElseThrow(
+                    () -> new ApiException(ExceptionEnum.NOT_FOUND_POST_ADMIN)
+            );
+        } else {
+            // 사용자 계정이므로 게시글 아이디와 작성자 이름이 있는지 확인하고 있으면 수정,삭제 가능
+            diary = diaryRepository.findByIdAndUserId(id, user.getId()).orElseThrow(
+                    () -> new ApiException(ExceptionEnum.NOT_FOUND_POST)
+            );
+        }
+        return diary;
+    }
+
+    // 관리자 계정만 모든 댓글 수정, 삭제 가능
+    public Comment getCommentAdminInfo(Long id, User user) {
+        Comment comment;
+        if (user.getRole().equals(UserRoleEnum.ADMIN)) {
+            // 관리자 계정이기 때문에 게시글 아이디만 일치하면 수정,삭제 가능
+            comment = commentRepository.findById(id).orElseThrow(
+                    () -> new ApiException(ExceptionEnum.NOT_FOUND_COMMENT_ADMIN)
+            );
+        } else {
+            // 사용자 계정이므로 게시글 아이디와 작성자 이름이 있는지 확인하고 있으면 수정,삭제 가능
+            comment = commentRepository.findByIdAndUserId(id, user.getId()).orElseThrow(
+                    () -> new ApiException(ExceptionEnum.NOT_FOUND_COMMENT)
+            );
+        }
+        return comment;
+    }
 }

@@ -29,8 +29,8 @@ public class UserController {
         return new ModelAndView("login");
     }
 
-    @PostMapping("/signup")
-    public ResponseEntity signup(@RequestBody @Valid SignupRequestDto signupRequestDto){
+    @PostMapping("/signup")//@Valid
+    public ResponseEntity signup(@RequestBody SignupRequestDto signupRequestDto){
         return ResponseEntity.ok().body(userService.signup(signupRequestDto));
     }
 

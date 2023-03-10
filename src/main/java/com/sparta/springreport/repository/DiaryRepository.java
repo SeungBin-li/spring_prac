@@ -8,5 +8,5 @@ import java.util.Optional;
 
 public interface DiaryRepository extends JpaRepository<Diary, Long> {
     List<Diary> findAllByOrderByCreatedAtDesc();
-    Optional<Diary> findByIdAndUsername(Long id, String username);
+    Optional<Diary> findByIdAndUserId(Long id, Long user_id);
 }

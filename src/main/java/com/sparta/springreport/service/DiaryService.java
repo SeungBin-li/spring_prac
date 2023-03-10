@@ -1,5 +1,7 @@
 package com.sparta.springreport.service;
 
+import com.sparta.springreport.common.ApiException;
+import com.sparta.springreport.common.ExceptionEnum;
 import com.sparta.springreport.dto.*;
 import com.sparta.springreport.entity.Diary;
 import com.sparta.springreport.entity.User;
@@ -28,45 +30,32 @@ public class DiaryService {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
 
+    //게시글 저장
     @Transactional
     public DiaryResponseDto writeDiary(DiaryRequestDto requestDto, HttpServletRequest request) {
-        String token = jwtUtil.resolveToken(request);
-        Claims claims;
 
-        // 토큰이 있는 경우에만 관심상품 추가 가능
-        if (token != null) {
-            if (jwtUtil.validateToken(token)) {
-                // 토큰에서 사용자 정보 가져오기
-                claims = jwtUtil.getUserInfoFromToken(token);
-            } else {
-                throw new IllegalArgumentException("Token Error");
-            }
-
-            // 토큰에서 가져온 사용자 정보를 사용하여 DB 조회
-            User user = userRepository.findByUsername(claims.getSubject()).orElseThrow(
-                    () -> new IllegalArgumentException("사용자가 존재하지 않습니다.")
-            );
-
-            // 요청받은 DTO 로 DB에 저장할 객체 만들기
+        User user = jwtUtil.getUserInfo(request);
+        // 요청받은 DTO 로 DB에 저장할 객체 만들기
             Diary diary = diaryRepository.saveAndFlush(new Diary(requestDto, user));
             return new DiaryResponseDto(diary);
-        } else {
-            return null;
-        }
     }
+
+    //개인 게시글 조회
     public DiaryListResponseDto getDiarys(Long id){
         Diary diary = diaryRepository.findById(id).orElseThrow(
-                ()-> new NullPointerException("해당 게시물 없음")
+                ()-> new ApiException(ExceptionEnum.NOT_FOUND_POST_ALL)
         );
         return new DiaryListResponseDto(diary);
     }
 
+    //게시글 전체 조회
     @Transactional(readOnly = true)
     public List<DiaryListResponseDto> getDiarys() {
+
         List<DiaryListResponseDto> diaryResponseDtoList = new ArrayList<>();
 
         List<Diary> diaryList = diaryRepository.findAllByOrderByCreatedAtDesc();
-            // 토큰에서 가져온 사용자 정보를 사용하여 DB 조회
+
         for (Diary diary : diaryList) {
             diaryResponseDtoList.add(new DiaryListResponseDto(diary));
             log.info("post = {}", diary);
@@ -93,59 +82,18 @@ public class DiaryService {
 
     @Transactional
     public DiaryResponseDto update(Long id, DiaryRequestDto requestDto, HttpServletRequest request) {
-        String token = jwtUtil.resolveToken(request);
-        Claims claims;
+        User user = jwtUtil.getUserInfo(request);
+        Diary diary = jwtUtil.getDiaryAdminInfo(id, user);
+        diary.update(requestDto);
 
-        // 토큰이 있는 경우에만 관심상품 최저가 업데이트 가능
-        if (token != null) {
-            // Token 검증
-            if (jwtUtil.validateToken(token)) {
-                // 토큰에서 사용자 정보 가져오기
-                claims = jwtUtil.getUserInfoFromToken(token);
-            } else {
-                throw new IllegalArgumentException("Token Error");
-            }
-
-            // 토큰에서 가져온 사용자 정보를 사용하여 DB 조회
-            User user = userRepository.findByUsername(claims.getSubject()).orElseThrow(
-                    () -> new IllegalArgumentException("사용자가 존재하지 않습니다.")
-            );
-
-            Diary diary = diaryRepository.findByIdAndUsername(id, claims.getSubject()).orElseThrow(
-                    () -> new NullPointerException("해당 게시물은 존재하지 않습니다.")
-            );
-            diary.update(requestDto);
-            return new DiaryResponseDto(diary);
-        } else {
-            return null;
-        }
+        return new DiaryResponseDto(diary);
     }
 
     @Transactional
     public MessageResponse deleteDiary(Long id, HttpServletRequest request) {
-        String token = jwtUtil.resolveToken(request);
-        Claims claims;
-
-        // 토큰이 있는 경우에만 관심상품 최저가 업데이트 가능
-        if (token != null) {
-            // Token 검증
-            if (jwtUtil.validateToken(token)) {
-                // 토큰에서 사용자 정보 가져오기
-                claims = jwtUtil.getUserInfoFromToken(token);
-            } else {
-                throw new IllegalArgumentException("Token Error");
-            }
-            User user = userRepository.findByUsername(claims.getSubject()).orElseThrow(
-                    ()-> new IllegalArgumentException("사용자가 존재하지 않습니다")
-            );
-            Diary diary = diaryRepository.findByIdAndUsername(id, claims.getSubject()).orElseThrow(
-                    ()->new NullPointerException("해당 게시글이 존재하지 않습니다")
-            );
-
-            diaryRepository.deleteById(id);
-            return new MessageResponse(StatusEnum.OK);
-
-        }
-        throw  new IllegalArgumentException("not followed access(no token)");
+        User user = jwtUtil.getUserInfo(request);
+        Diary diary = jwtUtil.getDiaryAdminInfo(id, user);
+        diaryRepository.deleteById(id);
+        return new MessageResponse(StatusEnum.OK);
     }
 }
