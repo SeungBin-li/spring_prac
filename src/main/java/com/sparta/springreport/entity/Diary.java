@@ -6,12 +6,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Entity
 @NoArgsConstructor
 public class Diary  extends Timestamped{
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "diary_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
@@ -21,21 +25,24 @@ public class Diary  extends Timestamped{
     private String title;
 
     @Column(nullable = false)
-    private String password;
-
-    @Column(nullable = false)
     private String contents;
 
-    public Diary(DiaryRequestDto diaryRequestDto){
-        this.username = diaryRequestDto.getUsername();
-        this.password = diaryRequestDto.getPassword();
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL)
+    @OrderBy(value = "createdAt DESC")
+    List<Comment> commentList = new ArrayList<>();
+
+    public Diary(DiaryRequestDto diaryRequestDto, User user){
+        this.username = user.getUsername();
         this.title = diaryRequestDto.getTitle();
         this.contents = diaryRequestDto.getContents();
+        this.user = user;
     }
 
     public void update(DiaryRequestDto requestDto){
-        this.username = requestDto.getUsername();
-        this.password = requestDto.getPassword();
         this.title = requestDto.getTitle();
         this.contents = requestDto.getContents();
      }

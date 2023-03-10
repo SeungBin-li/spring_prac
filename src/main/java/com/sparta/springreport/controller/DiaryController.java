@@ -1,9 +1,12 @@
 package com.sparta.springreport.controller;
 
-import com.sparta.springreport.dto.DiaryDeleteDto;
+import com.sparta.springreport.dto.DiaryListResponseDto;
 import com.sparta.springreport.dto.DiaryRequestDto;
-import com.sparta.springreport.entity.Diary;
+import com.sparta.springreport.dto.DiaryResponseDto;
+import com.sparta.springreport.jwt.JwtUtil;
+import com.sparta.springreport.repository.UserRepository;
 import com.sparta.springreport.service.DiaryService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +19,8 @@ import java.util.List;
 public class DiaryController {
 
     private final DiaryService diaryService;
+    private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
 
     @GetMapping("/")
     public ModelAndView home() {
@@ -23,22 +28,29 @@ public class DiaryController {
     }
 
     @PostMapping("/api/diarys")
-    public Diary writeDiary(@RequestBody DiaryRequestDto requestDto) {
-        return diaryService.writeDiary(requestDto);
+    public DiaryResponseDto writeDiary(@RequestBody DiaryRequestDto requestDto, HttpServletRequest request) {
+        return diaryService.writeDiary(requestDto, request);
     }
 
+
     @GetMapping("/api/diarys")
-    public List<Diary> getDiarys() {
+    public List<DiaryListResponseDto> getDiarys(){
         return diaryService.getDiarys();
     }
 
+    @GetMapping("/api/diarys/{id}")
+    public DiaryListResponseDto getDiarys(@PathVariable Long id){
+        return diaryService.getDiarys(id);
+    }
+
     @PutMapping("/api/diarys/{id}")
-    public ResponseEntity updateDiary(@PathVariable Long id, @RequestBody DiaryRequestDto requestDto) {
-        diaryService.update(id, requestDto);
-        return ResponseEntity.ok(id);
+    public DiaryResponseDto updateDiary(@PathVariable Long id, @RequestBody DiaryRequestDto requestDto, HttpServletRequest request) {
+        return diaryService.update(id, requestDto, request);
     }
+
     @DeleteMapping("/api/diarys/{id}")
-    public Long deleteMemo(@PathVariable Long id, @RequestBody DiaryDeleteDto deleteDto){
-        return diaryService.deleteDiary(id, deleteDto);
+    public ResponseEntity deleteDiary(@PathVariable Long id, HttpServletRequest request){
+        return ResponseEntity.ok().body(diaryService.deleteDiary(id, request));
     }
+
 }
