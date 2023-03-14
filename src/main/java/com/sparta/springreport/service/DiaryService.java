@@ -14,6 +14,7 @@ import io.jsonwebtoken.Jwt;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,11 +32,11 @@ public class DiaryService {
     private final UserRepository userRepository;
 
     //게시글 저장
+    @Secured({"ROLE_USER","ROLE_ADMIN"})
     @Transactional
-    public DiaryResponseDto writeDiary(DiaryRequestDto requestDto, HttpServletRequest request) {
+    public DiaryResponseDto writeDiary(DiaryRequestDto requestDto, User user) {
 
-        User user = jwtUtil.getUserInfo(request);
-        // 요청받은 DTO 로 DB에 저장할 객체 만들기
+
             Diary diary = diaryRepository.saveAndFlush(new Diary(requestDto, user));
             return new DiaryResponseDto(diary);
     }
@@ -58,7 +59,7 @@ public class DiaryService {
 
         for (Diary diary : diaryList) {
             diaryResponseDtoList.add(new DiaryListResponseDto(diary));
-            log.info("post = {}", diary);
+
         }
             // 사용자 권한 가져와서 ADMIN 이면 전체 조회, USER 면 본인이 추가한 부분 조회
             /*UserRoleEnum userRoleEnum = user.getRole();
@@ -81,19 +82,35 @@ public class DiaryService {
     }
 
     @Transactional
-    public DiaryResponseDto update(Long id, DiaryRequestDto requestDto, HttpServletRequest request) {
-        User user = jwtUtil.getUserInfo(request);
-        Diary diary = jwtUtil.getDiaryAdminInfo(id, user);
-        diary.update(requestDto);
+    public DiaryResponseDto update(Long id,
+                                       DiaryRequestDto diaryRequestDto,
+                                      User user) {
 
+        Diary diary = getPostAdminInfo(id, user);
+        diary.update(diaryRequestDto); // 이미 존재하는 post객체를 수정하고 업데이트하는 데 사용한다.
         return new DiaryResponseDto(diary);
     }
 
     @Transactional
-    public MessageResponse deleteDiary(Long id, HttpServletRequest request) {
-        User user = jwtUtil.getUserInfo(request);
-        Diary diary = jwtUtil.getDiaryAdminInfo(id, user);
+    public MessageResponse deleteDiary(Long id, User user) {
+        getPostAdminInfo(id, user);
         diaryRepository.deleteById(id);
         return new MessageResponse(StatusEnum.OK);
+    }
+
+    public Diary getPostAdminInfo(Long id, User user) {
+        Diary diary;
+        if (user.getRole().equals(UserRoleEnum.ADMIN)) {
+            // 관리자 계정이기 때문에 게시글 아이디만 일치하면 수정,삭제 가능
+            diary = diaryRepository.findById(id).orElseThrow(
+                    () -> new ApiException(ExceptionEnum.NOT_FOUND_POST_ADMIN)
+            );
+        } else {
+            // 사용자 계정이므로 게시글 아이디와 작성자 이름이 있는지 확인하고 있으면 수정,삭제 가능
+            diary = diaryRepository.findByIdAndUserId(id, user.getId()).orElseThrow(
+                    () -> new ApiException(ExceptionEnum.NOT_FOUND_POST)
+            );
+        }
+        return diary;
     }
 }

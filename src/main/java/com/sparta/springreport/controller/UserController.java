@@ -1,6 +1,7 @@
 package com.sparta.springreport.controller;
 
 import com.sparta.springreport.dto.LoginRequestDto;
+import com.sparta.springreport.dto.MessageResponse;
 import com.sparta.springreport.dto.SignupRequestDto;
 import com.sparta.springreport.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,7 +15,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/api/auth")
+@RequestMapping("/diary/user")
 public class UserController {
 
     private final UserService userService;
@@ -34,10 +35,9 @@ public class UserController {
         return ResponseEntity.ok().body(userService.signup(signupRequestDto));
     }
 
-    @ResponseBody
+    //@ResponseBody
     @PostMapping("/login")
-    public String login(@RequestBody LoginRequestDto loginRequestDto, HttpServletResponse response) {
-        userService.login(loginRequestDto, response);
-        return "success";
+    public ResponseEntity login(@RequestBody LoginRequestDto loginRequestDto, HttpServletResponse response) {
+        return ResponseEntity.ok().body(userService.login(loginRequestDto, response));
     }
 }

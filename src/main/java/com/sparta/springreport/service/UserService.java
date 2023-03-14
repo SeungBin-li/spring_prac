@@ -1,5 +1,8 @@
 package com.sparta.springreport.service;
 
+import com.sparta.springreport.common.ApiException;
+import com.sparta.springreport.common.ExceptionEnum;
+import com.sparta.springreport.config.WebSecurityConfig;
 import com.sparta.springreport.dto.LoginRequestDto;
 import com.sparta.springreport.dto.MessageResponse;
 import com.sparta.springreport.dto.SignupRequestDto;
@@ -8,8 +11,12 @@ import com.sparta.springreport.entity.User;
 import com.sparta.springreport.entity.UserRoleEnum;
 import com.sparta.springreport.jwt.JwtUtil;
 import com.sparta.springreport.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -18,17 +25,18 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-
 public class UserService {
-
+    //순서 알아보기
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+
     private static final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
     @Transactional
     public MessageResponse signup(SignupRequestDto signupRequestDto){
         String username = signupRequestDto.getUsername();
-        String password = signupRequestDto.getPassword();
+        String password = passwordEncoder.encode(signupRequestDto.getPassword());
 
         Optional<User> found = userRepository.findByUsername(username);
 
@@ -48,20 +56,18 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public void login(LoginRequestDto loginRequestDto, HttpServletResponse response) {
-        String username = loginRequestDto.getUsername();
-        String password = loginRequestDto.getPassword();
+    public MessageResponse login(LoginRequestDto requestDto, HttpServletResponse response) {
+        String username = requestDto.getUsername();
+        String password = requestDto.getPassword();
 
-        // 사용자 확인
         User user = userRepository.findByUsername(username).orElseThrow(
-                () -> new IllegalArgumentException("등록된 사용자가 없습니다.")
+                ()-> new ApiException(ExceptionEnum.NOT_FOUND_USER)
         );
-        // 비밀번호 확인
-        if(!user.getPassword().equals(password)){
-            throw  new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        if (!passwordEncoder.matches(password, user.getPassword())){
+            throw new ApiException(ExceptionEnum.NOT_FOUND_USER);
         }
-
         response.addHeader(JwtUtil.AUTHORIZATION_HEADER, jwtUtil.createToken(user.getUsername(), user.getRole()));
+        return new MessageResponse(StatusEnum.OK)
     }
 
 }

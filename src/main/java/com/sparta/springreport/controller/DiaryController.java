@@ -5,10 +5,14 @@ import com.sparta.springreport.dto.DiaryRequestDto;
 import com.sparta.springreport.dto.DiaryResponseDto;
 import com.sparta.springreport.jwt.JwtUtil;
 import com.sparta.springreport.repository.UserRepository;
+import com.sparta.springreport.security.UserDetailsImpl;
 import com.sparta.springreport.service.DiaryService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -28,8 +32,8 @@ public class DiaryController {
     }
 
     @PostMapping("/api/diarys")
-    public DiaryResponseDto writeDiary(@RequestBody DiaryRequestDto requestDto, HttpServletRequest request) {
-        return diaryService.writeDiary(requestDto, request);
+    public DiaryResponseDto writeDiary(@RequestBody DiaryRequestDto requestDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return diaryService.writeDiary(requestDto, userDetails.getUser());
     }
 
 
@@ -44,13 +48,13 @@ public class DiaryController {
     }
 
     @PutMapping("/api/diarys/{id}")
-    public DiaryResponseDto updateDiary(@PathVariable Long id, @RequestBody DiaryRequestDto requestDto, HttpServletRequest request) {
-        return diaryService.update(id, requestDto, request);
+    public DiaryResponseDto updateDiary(@PathVariable Long id, @RequestBody DiaryRequestDto requestDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return diaryService.update(id, requestDto, userDetails.getUser());
     }
 
     @DeleteMapping("/api/diarys/{id}")
-    public ResponseEntity deleteDiary(@PathVariable Long id, HttpServletRequest request){
-        return ResponseEntity.ok().body(diaryService.deleteDiary(id, request));
+    public ResponseEntity deleteDiary(@PathVariable Long id, @AuthenticationPrincipal UserDetailsImpl userDetails){
+        return ResponseEntity.ok().body(diaryService.deleteDiary(id, userDetails.getUser()));
     }
 
 }
