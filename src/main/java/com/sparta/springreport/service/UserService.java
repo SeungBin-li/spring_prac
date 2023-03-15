@@ -31,7 +31,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    private static final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
+    private static final String ADMIN_TOKEN = "dltmdqlsrhksflwkxhzms";
 
     @Transactional
     public MessageResponse signup(SignupRequestDto signupRequestDto){
@@ -67,7 +67,7 @@ public class UserService {
             throw new ApiException(ExceptionEnum.NOT_FOUND_USER);
         }
         response.addHeader(JwtUtil.AUTHORIZATION_HEADER, jwtUtil.createToken(user.getUsername(), user.getRole()));
-        return new MessageResponse(StatusEnum.OK)
+        return new MessageResponse(StatusEnum.OK);
     }
 
 }

@@ -32,16 +32,14 @@ public class DiaryService {
     private final UserRepository userRepository;
 
     //게시글 저장
-    @Secured({"ROLE_USER","ROLE_ADMIN"})
     @Transactional
     public DiaryResponseDto writeDiary(DiaryRequestDto requestDto, User user) {
-
-
             Diary diary = diaryRepository.saveAndFlush(new Diary(requestDto, user));
             return new DiaryResponseDto(diary);
     }
 
     //개인 게시글 조회
+    @Transactional
     public DiaryListResponseDto getDiarys(Long id){
         Diary diary = diaryRepository.findById(id).orElseThrow(
                 ()-> new ApiException(ExceptionEnum.NOT_FOUND_POST_ALL)

@@ -26,10 +26,6 @@ public class DiaryController {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
 
-    @GetMapping("/")
-    public ModelAndView home() {
-        return new ModelAndView("index");
-    }
 
     @PostMapping("/api/diarys")
     public DiaryResponseDto writeDiary(@RequestBody DiaryRequestDto requestDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
